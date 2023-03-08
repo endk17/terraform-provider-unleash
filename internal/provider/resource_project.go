@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -19,9 +18,6 @@ func resourceProject() *schema.Resource {
 		ReadContext:   resourceProjectRead,
 		UpdateContext: resourceProjectUpdate,
 		DeleteContext: resourceProjectDelete,
-		// AddUserContext: resourceProjectAddUser,
-		// UpdateUserRoleContext: resourceProjectUpdateUserRole,
-		// RemoveUserRoleContext: resourceProjectRemoveUser,
 
 		// The descriptions are used by the documentation generator and the language server.
 		Schema: map[string]*schema.Schema{
@@ -50,7 +46,7 @@ func resourceProjectCreate(ctx context.Context, d *schema.ResourceData, meta int
 	var diags diag.Diagnostics
 
 	project := &api.Project{
-		ProjectId:   d.Get("project_id").(string),
+		Id:          d.Get("project_id").(string),
 		Name:        d.Get("name").(string),
 		Description: d.Get("description").(string),
 	}
@@ -63,7 +59,7 @@ func resourceProjectCreate(ctx context.Context, d *schema.ResourceData, meta int
 		return diag.FromErr(err)
 	}
 
-	d.SetId(strconv.Itoa(createdProject.Id))
+	d.SetId(createdProject.Id)
 	readDiags := resourceUserRead(ctx, d, meta)
 	if readDiags != nil {
 		diags = append(diags, readDiags...)
@@ -99,7 +95,7 @@ func resourceProjectUpdate(ctx context.Context, d *schema.ResourceData, meta int
 	projectId := d.Get("project_id").(string)
 
 	project := &api.Project{
-		ProjectId:   d.Get("project_id").(string),
+		Id:          d.Get("project_id").(string),
 		Name:        d.Get("name").(string),
 		Description: d.Get("description").(string),
 	}
@@ -130,72 +126,6 @@ func resourceProjectDelete(ctx context.Context, d *schema.ResourceData, meta int
 	}
 
 	d.SetId("")
-
-	return diags
-}
-
-func resourceProjectAddUser(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
-
-	var diags diag.Diagnostics
-
-	userId := d.Get("user_id").(string)
-	projectId := d.Get("project_id").(string)
-	roleId := d.Get("role_id").(string)
-
-	_, _, err := client.Projects.AddUserToProject(userId, projectId, roleId)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	readDiags := resourceProjectRead(ctx, d, meta)
-	if readDiags != nil {
-		diags = append(diags, readDiags...)
-	}
-
-	return diags
-}
-
-func resourceProjectRemoveUser(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
-
-	var diags diag.Diagnostics
-
-	userId := d.Get("user_id").(string)
-	projectId := d.Get("project_id").(string)
-	roleId := d.Get("role_id").(string)
-
-	_, err := client.Projects.RemoveUserFromProject(userId, projectId, roleId)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	readDiags := resourceProjectRead(ctx, d, meta)
-	if readDiags != nil {
-		diags = append(diags, readDiags...)
-	}
-
-	return diags
-}
-
-func resourceProjectUpdateUserRole(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*api.ApiClient)
-
-	var diags diag.Diagnostics
-
-	userId := d.Get("user_id").(string)
-	projectId := d.Get("project_id").(string)
-	roleId := d.Get("role_id").(string)
-
-	_, _, err := client.Projects.UpdateUserRole(userId, projectId, roleId)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	readDiags := resourceProjectRead(ctx, d, meta)
-	if readDiags != nil {
-		diags = append(diags, readDiags...)
-	}
 
 	return diags
 }
